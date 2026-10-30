@@ -147,10 +147,145 @@ default-class AUC.
 
 Each prediction is reported whether it holds or fails.
 
+## Data log
+
+- 2026-10-29 10:36 ET: this design committed (07c8ffd), no loan-level file on
+  the machine.
+- 2026-10-29 13:25 to 14:30 ET: the 28 Standard Dataset year files
+  (`historical_data_1999.zip` to `historical_data_2026.zip`, Release 47,
+  performance through June 2026) downloaded by the author from Freddie Mac's
+  Clarity portal; every archive passed `unzip -t`.
+- 2026-10-29 14:33 ET: first loan-level file opened (2026Q2, to read the
+  Release 47 layout).
+
 ## Deviations from the recorded design
 
-None yet.
+1. **Prepayment grid reduced** (2026-10-29, before any model output was
+   seen). The design picks the prepayment model as the best of the full
+   65-model grid. A probe fit at December 2008 showed a prepayment LightGBM
+   model needs about 2,700 boosting rounds (~100 s), so the full grid would
+   cost about two hours per date. The prepayment model is now the best of the
+   eight unconstrained LightGBM settings at seed 1 plus the spline logit. The
+   monotone constraints are stated for default risk (they would force
+   prepayment to fall as credit scores rise), and extra seeds only choose
+   the luckiest draw of a model the design holds fixed. The default-model
+   grid, the object of the study, is unchanged. The secondary analysis that
+   varies the prepayment model uses this nine-model grid.
+2. **Secondary "LGD varied with the PD model" not run** (recorded
+   2026-10-30). The design listed it as a secondary analysis; it was not
+   implemented. The severity table is held fixed across models throughout.
+3. **Allowance scaling** (implementation, recorded 2026-10-30). The design
+   scales the scored sample's allowance by the inverse sampling fraction;
+   the code uses the ratio estimator (expected loss over balance on the
+   sample) times the balance of the whole active book. The two agree in
+   expectation; the ratio estimator has lower variance.
+4. **Long-run means** (implementation, recorded 2026-10-30). The design says
+   the reversion means are computed "on data before t"; the code uses every
+   year up to and including T, whose December values are observed at T.
+
+## Analyses added after seeing results (labelled as such in the paper)
+
+1. **Paired tolerance** (2026-10-29, after the December 2007 results). The
+   recorded set admits models within one bootstrap SE of the best model's own
+   held-out log loss. That SE is much larger than the SE of a paired
+   difference between two models on the same held-out loans: at December
+   2007 the recorded set has 35 models, while only 2 are within one paired SE
+   of the best. The paper reports a stricter set alongside the recorded one:
+   models whose held-out log loss exceeds the best's by at most one (or two)
+   loan-clustered bootstrap SEs of the paired difference. It does not replace
+   the recorded set in any prediction.
+2. **Like-for-like versions of H1 and H6** (2026-10-30, after all dates). As
+   recorded, H1 compares the full range of the ~50-model set with the
+   central 95% width of 20 refits, and H6 compares disagreement among ~50
+   models with disagreement among 20 refits; both comparisons favour the set
+   mechanically. The paper also reports 20 randomly drawn set models against
+   the full range and disagreement of the 20 refits.
+3. **Lower bound for realized losses** (2026-10-30, after all dates). Unresolved defaults
+   (mostly still-active, largely reperforming pandemic-era loans) are valued
+   at the severity of resolved defaults in the recorded estimate; the paper
+   also reports realized losses with them at zero.
+4. **Independent-sample refits** (2026-10-30, after an independent referee
+   review). The recorded H1 refits fit on bootstrap resamples, which keep
+   about 63% of distinct loans; their held-out log loss is worse than the
+   best model's at every date and their mean allowance is biased. The paper
+   also reports 20 refits of the best configuration on independent random
+   samples of the same size (`code/04b_resample.py`), with their accuracy
+   and bias, and repeats the like-for-like comparisons against them.
+5. **H5 decomposition** (2026-10-30, after the referee review). For the most
+   accurate model, the allowance on the realized macro path and with the
+   severity table of all defaults resolved by December 2025, to separate the
+   forecast and severity components of the miss.
+6. **Delinquency disclosure** (2026-10-30, after the referee review). The
+   design has no current-delinquency input; the paper reports the share of
+   each portfolio 30-179 days past due and their next-year default rates.
+
+7. **Second review checks** (2026-10-30, after a second independent
+   referee review; `code/07b_posthoc.py`). Where the most accurate model sits
+   in the set and the rank correlation of held-out log loss with the
+   allowance (across the set and across the refits of one configuration); H4
+   on random equal-size subsets of the two families' sets; whether the refit
+   ranges cover realized losses; the H5 decomposition with the December 2019
+   severity table (resolutions before pandemic forbearance) and the model's
+   lifetime PD on the realized path against the realized default share.
+
+## Bugs found and fixed
+
+1. 2026-10-29: the realized macro path looked up each state with a tuple
+   key and silently fell back to the long-run means; a few dozen loans a year
+   with no remaining term were cast to invalid integers. Both fixed in
+   `05_allowance.py` (with a regression test) after the first three dates'
+   allowances had been computed; the allowance step was rerun for those dates.
+2. 2026-10-30: the severity table took the unweighted mean of per-loan
+   ratios (loss / balance at default). A handful of loans with a near-zero
+   balance at default dominate that mean (one with $0.19 at default and a
+   $27,168 loss has a ratio of 143,000), which put the December 2023
+   low-LTV, power-of-sale cell at 124%. Severity is now balance-weighted
+   (total loss / total balance at default), the rate a dollar allowance
+   multiplies by; the same change applies to the imputation of unresolved
+   realized losses. Found after all per-date allowances existed, from an
+   implausible allowance level; the allowance step was rerun for every date;
+   the fitted models are unchanged.
+3. 2026-10-30 (found by the referee review): "immediate" reversion set the
+   macro value at year-end T+2 to the long-run mean. Because that value is
+   the HPI growth over year T+2, this shortened the two-year forecast period
+   for house prices. Immediate reversion now starts at T+3, which at annual
+   resolution is the same path as one-year straight-line reversion; the
+   policy range for H2 is therefore the range between that path and
+   three-year straight-line reversion. The allowance step was rerun for every
+   date.
 
 ## Trade-secret firewall
 
 Public data and published methods only. Nothing from any private trading work.
+
+## Results summary (v0.1; every number is generated by `code/09_paper.py`)
+
+| | Result |
+|---|---|
+| Set of equally accurate models | median 50 of 65 (27–61); best is unconstrained LightGBM at every date |
+| Allowance range across the set | median 55% of the best model's allowance (22%–133%); up to $18.0bn (Dec. 2011) |
+| Stricter paired 2-SE set (post hoc) | median 7 models, median relative range 17% |
+| H1 model choice > bootstrap refit noise | holds, 13 of 21 dates |
+| H2 model choice ≥ reversion-policy range | holds, 21 of 21 dates (median ratio 11.7) |
+| H3 spread widens into stress | **fails** (37% and 46% vs 56%) |
+| H4 monotone family narrower | holds narrowly, 12 of 21 dates; medians 42% vs 38% |
+| H5 realized loss inside the range at < half | holds, 1 of 13 dates |
+| H6 more stage flips across set than refits | holds, 17 of 21 dates (27.1% vs 27.5%) |
+| Independent-sample refits (post hoc) | span 49% vs 49% for 20 set models (61% vs 32% at the 8 disjoint dates); flip 27.1% vs 18.4% of loans' stage |
+
+## Reproduce
+
+1. Register with Freddie Mac and download the Standard Dataset year archives
+   (Release 47) and the FRED series; check them against `data/SHA256SUMS_*`.
+   Point `data/gse` at the folder holding them.
+2. `python code/01_ingest.py Q` for each quarter, then `code/02_macro.py`,
+   `code/03_panel.py`.
+3. `code/run_dates.sh` (models and allowances, 21 dates), then
+   `code/run_resample.sh` and `code/run_alloc.sh` (independent-sample refits
+   and the allowance step with them), `code/06_realized.py`,
+   `code/07_analysis.py`, `code/07b_posthoc.py`.
+4. `bash paper/build.sh` (figures, numbers, tables, PDF), then
+   `python paper/audit.py` (independent recomputation; exits non-zero on any
+   failure) and `python -m pytest tests`.
+
+Python 3.12 or later; see `pyproject.toml`.

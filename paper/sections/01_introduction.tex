@@ -1,0 +1,92 @@
+\section{Introduction}\label{sec:intro}
+
+A bank's allowance for credit losses is one number on its balance sheet, and
+under the current expected credit loss standard (CECL) it is a forecast: the
+losses the bank expects over the whole remaining life of its loans. The
+standard lets the bank choose how to estimate it \citep{asc326}, the
+supervisors' policy statement calls the estimate ``inherently imprecise''
+\citep{ips2023acl}, and the SEC expects registrants to document ``the
+identified range'' of expected losses and why they picked the estimate they
+did within it \citep{sab119}. Nobody says how wide that range is. This paper
+measures one part of it that is easy to overlook: the part that comes from
+the credit model alone.
+
+The problem is that many credit models fit the same history about equally
+well. A lender that trains gradient-boosted trees, constrained trees and a
+spline logistic regression on the same loans, and keeps every model whose
+held-out accuracy is within a stated tolerance of the best, has several
+defensible default models. Each implies an allowance. If they agree, the
+choice does not matter. If they do not, the reserve depends on a decision
+that accuracy alone does not settle, and the documented range is wider than
+any single model shows.
+
+I measure this on Freddie Mac's public loan-level data: \num{data.orig_rows}
+fixed-rate mortgages and \num{data.perf_rows} billion loan-months of
+performance. At each of \num{const.n_dates} year-ends from 2005 to 2025 I
+train \num{const.n_models} default models on what a lender would have known
+then, keep those within one bootstrap standard error of the best held-out log
+loss, and compute the lifetime allowance of the same 200{,}000 portfolio
+loans under every one, holding fixed everything else a CECL estimate needs: the
+prepayment model, the economic forecast, the reversion to long-run averages
+after the two-year forecast period, and the loss-severity table. The design
+and six predictions were committed before any loan-level file was opened.
+
+Four findings stand out.
+
+\begin{enumerate}[leftmargin=*, itemsep=2pt]
+\item \emph{Equally accurate models disagree substantially.} The range of the
+allowance across the set has a median of \num{res.rel.median}\% of the most
+accurate model's allowance, and up to \num{res.usd.max} billion dollars on
+Freddie Mac's non-defaulted active book (December \num{res.usd.max_year}).
+Stricter sets shrink it but do not remove it: among the models within two
+standard errors of their paired difference from the best (a median of
+\num{ph.paired2.size}) the range is a median \num{ph.paired2.rel}\%, and within
+one paired standard error (a median of \num{res.paired1.size} models, a single
+model at \num{p2.paired1.single} dates) it is \num{res.paired1.rel}\%. The
+recorded range exceeds the range between one- and three-year reversion to
+long-run averages at every date, by a median factor of
+\num{res.ratio_policy.median}, although that is only part of the discretion
+the standard grants over the forecast (\cref{sec:limits}).
+\item \emph{Retraining the same model moves it at least as much.} The recorded
+test, against bootstrap refits, holds at \num{H1.n} of \num{const.n_dates}
+dates, but those refits are less accurate than the model they refit. Refits of
+the most accurate configuration on independent random samples of the same
+size, which are as accurate as the original fit to within a fraction of a
+standard error, are the fairer benchmark (added after the results). At the
+\num{ph.rs.disj.n} dates where those samples are disjoint, twenty such refits
+span a median \num{p2.disj.rsm}\% of the allowance against \num{p2.disj.lfl}\%
+for twenty randomly chosen equally accurate models (\cref{sec:refits}).
+\item \emph{No range covers what happened.} Realized losses fall inside
+the set's range at one of \num{H5.n_elig} dates with eight or more years of
+outcomes, and inside the range of the refits at \num{p2.in_refit} (bootstrap)
+and \num{p2.in_rsm} (independent samples). They were \num{res.miss2006} times the top of the range for the
+December 2006 portfolio and below it at every date from 2010 to 2017. Model uncertainty and
+forecast uncertainty are different things, and a range built from models says
+nothing about the second.
+\item \emph{IFRS 9 staging is fragile.} Across the set a median
+\num{res.flip.median}\% of loans change stage under the twice-the-origination-PD
+test. The recorded prediction that the set flips more loans than the refits
+holds at \num{H6.n} dates, but the medians are almost equal, and in comparisons
+added after the results twenty independent-sample refits flip more loans than
+twenty set models at all but \num{ph.rs.flipmore} dates (\num{ph.rs.flip}\%
+against \num{ph.H6.flipset}\%): the prediction holds, but not for the reason it
+was made.
+\end{enumerate}
+
+\noindent Two predictions failed or held only narrowly. The relative range was
+not unusually large on the eve of the crisis (H3 fails), and monotone
+constraints narrowed it at only \num{H4.n} of \num{const.n_dates} dates.
+
+The paper makes three contributions. It gives, to my knowledge, the first measurement on public
+data of how far a CECL allowance moves across a formally defined set of
+equally accurate loan-level models, with the other inputs held fixed. It
+separates that model-choice range from training-sample noise, from the discretion over
+reversion and from realized losses, over two decades that include a crisis
+and a pandemic. And it supplies a reproducible procedure, released with the
+code, that a lender, validator or auditor can run to produce the identified
+range SAB 119 asks for.
+
+\Cref{sec:background} sets out the accounting and supervisory rules and the
+related work, \cref{sec:data,sec:method} the data and the design,
+\cref{sec:results} the results and \cref{sec:discussion} what they mean for
+preparers, auditors and model validators.

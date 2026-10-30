@@ -1,0 +1,122 @@
+\section{Discussion}\label{sec:discussion}
+
+\subsection{What the range means for preparers, auditors and validators}
+
+\paragraph{Preparers.} SAB 119 expects a registrant to document an identified
+range of expected credit losses and its reasons for the point it books. The
+results suggest the range should include the model. On this book a median
+of \num{res.rel.median}\% of the allowance separates models within one standard
+error of the best held-out log loss (\num{ph.paired2.rel}\% under a strict
+paired test), and retraining the chosen model on another random sample of the
+same size moves it at least as far. A lender can measure both with the procedure
+here: fit a small grid, keep the models within a stated tolerance of the best
+held-out log loss, refit the best on independent samples of its data, and
+report the allowance across both. Bootstrap refits are a poor substitute:
+they are less accurate than the model they refit and biased upward. None of this needs data the lender does not already have.
+
+\paragraph{Auditors.} AS 2501 asks the auditor to evaluate the company's
+selection among reasonable alternatives, and AS 2810 treats a recorded
+estimate outside a reasonable range as misstated by the distance to the closest
+reasonable estimate. Equally accurate models are reasonable alternatives on
+any accuracy-based standard. A set like the one used here gives the auditor a
+reproducible range to set the booked estimate against, in place of a judgment
+about whether a single model is ``reasonable''.
+
+\paragraph{Model validators.} The 2026 interagency guidance asks validators to
+benchmark against alternative models, but it does not address accounting
+estimates. Benchmarking that compares a chosen model with alternatives only on
+accuracy will pass every model in the set while missing the
+\num{res.rel.median}\% spread in what the models are for. Validation of an
+allowance model should compare allowances, not only accuracy, across the
+models the bank could defensibly have chosen, and include refit noise.
+
+\paragraph{Monotone constraints are not a fix.} Constraining the direction of
+credit risk narrowed the range at barely more than half the dates (H4), and
+not at all on average. The lifetime projection runs through inputs the
+constraints leave free.
+
+\paragraph{No range is forecast uncertainty.} At all but one of the
+dates with eight or more years of outcomes, the realized loss on the scored
+loans lay outside the set's range (H5), and outside the range of the refits at
+all but \num{p2.in_refit} (bootstrap) or \num{p2.in_rsm} (independent samples). Before the crisis every model in the
+set, fed a forecast that held house prices rising at their 2005 or 2006 pace
+and a severity table from benign years, missed the losses by a wide margin;
+after it the allowance overshot. Before the crisis the miss lay in the
+forecast and the severity table rather than in the default model, whose
+lifetime PDs on the realized path were close to the realized default rates
+(\cref{tab:decomp}), and the models agreed with one another far more than
+with the outcome. A range across models documents one kind of uncertainty
+and should not be read as a confidence interval for losses.
+
+\subsection{Limitations}\label{sec:limits}
+
+\begin{itemize}[leftmargin=*, itemsep=2pt]
+\item \emph{One book, one product.} The data are Freddie Mac's standard dataset
+of conforming, fully amortizing fixed-rate mortgages. Banks' books contain
+other products, and an agency guarantor bears credit risk differently from a
+bank holding a loan. The magnitudes should not be read as a bank's; the
+procedure carries over.
+\item \emph{No delinquency input.} The design has no current-delinquency
+input. Loans 30 to 179 days past due are \num{dq.share.min}\% to
+\num{dq.share.max}\% of the portfolio balance (most in December
+\num{dq.share.max_year}), and they default far more often than current loans:
+in 2010, \num{dq.2009.d90}\% of the loans 90 to 179 days past due at December
+2009 defaulted and \num{dq.2009.d30}\% of those 30 to 89 days past due, against
+\num{dq.2009.cur}\% of current loans. Any lender would use delinquency, which
+would raise the level of the allowance, most in 2008 to 2011. Whether it
+would narrow the range across models is not tested here.
+\item \emph{The tolerance.} The recorded set admits models within one
+bootstrap standard error of the best model's own log loss, which is generous:
+a test on paired differences admits a median of \num{ph.paired2.size} models at
+two standard errors. The relative range is still \num{ph.paired2.rel}\% of the
+allowance under that strict set.
+\item \emph{The model grid.} The set contains only the families tried here.
+A wider grid (neural networks, other link functions) could widen the range,
+which is therefore a lower bound on model-choice uncertainty within these
+families.
+\item \emph{The policy range.} At annual resolution two of the three reversion
+policies coincide, and the length of the forecast period is not varied, so
+H2 compares the model range with a narrow slice of the policy discretion the
+standard allows.
+\item \emph{Data as revised.} Each date uses only data dated on or before $T$,
+but in its 2026 form: (a) Freddie Mac's Release 47 performance history and actual losses,
+which may correct what was reported at the time and include recoveries and
+expenses posted after a loan's zero-balance date, so the severity table at $T$
+contains amounts a lender at $T$ had not yet seen; (b) current FRED vintages
+of the house-price index and unemployment rates, which are revised; (c)
+long-run means that include year $T$ itself; (d) the exclusion from the
+severity table of loans repurchased for a defect found after $T$. None of
+these is a default outcome after $T$, but (a), (b) and (d) are information a
+lender at $T$ did not have in this form.
+\item \emph{Censored loan-years.} Loan-years ending in removal for a defect or
+a reperforming sale without a prior default are dropped from training, which
+treats that removal as uninformative about default.
+\item \emph{Pandemic forbearance.} By the recorded definition, a loan 180 days
+past due in forbearance has defaulted. Models trained after 2020 learn that
+spike, and most of those loans were later paid off or remain active. This
+raises lifetime PDs at the later dates; the severity table offsets it in part
+because payoffs after default count as zero-loss resolutions.
+\item \emph{Severity.} The loss-given-default table is held fixed across
+models, uses only defaults resolved by the reporting date, and excludes
+modification costs, which Freddie Mac's actual-loss field omits. The design's
+secondary analysis that lets severity vary with the default model was not run
+(\cref{app:deviations}); a model for severity would add another source of
+variation.
+\item \emph{Realized losses.} Outcomes end in June 2026, so the realized loss
+of the later portfolios is truncated. Defaults still unresolved then are
+valued at the severity of resolved defaults, which is most of realized loss
+from 2015 (\cref{tab:decomp}); the lower bound counts them at zero. Neither
+changes the verdict on H5.
+\end{itemize}
+
+\subsection{Conclusion}
+
+The CECL standard leaves the method to the lender, and the evidence here is
+that the choice is not innocuous. Equally accurate default models trained on
+the same history give allowances a median \num{res.rel.median}\% apart, more
+than the gap between one- and three-year reversion, and no more than
+retraining one model on another sample of its loans. Neither source of
+variation tells a lender where losses will land. Documenting the range from
+the model, as SAB 119 already asks for the estimate, is cheap with the
+procedure released here, and it is the part of the identified range a bank
+can measure with its own data.

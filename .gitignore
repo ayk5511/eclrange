@@ -1,0 +1,16 @@
+# Loan-level data and derivatives stay outside the repository (dataset terms).
+data/gse
+# Third-party documents are cited, not redistributed; docs/SOURCES.md lists them.
+docs/*
+!docs/SOURCES.md
+paper/.firewall_terms
+ingest.log
+*.log
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+!results/**/*.parquet
+# Smoke-mode test outputs (tiny samples), not results
+results/smoke/
+results/smoke_by_date.csv
+logs/

@@ -1,0 +1,184 @@
+\section{Method}\label{sec:method}
+
+The design below was committed to the repository on 29 October 2026, before
+any loan-level file had been downloaded (commit \texttt{07c8ffd}). The data log,
+the deviations from it, the corrected bugs and the analyses added after the
+results are listed in \cref{app:deviations}. Each choice is
+stated with the reason for it.
+
+\subsection{Reporting dates, portfolio and training data}
+
+A reporting date $T$ is a calendar year-end, December 2005 to December 2025
+(\num{const.n_dates} dates). The \emph{portfolio} at $T$ is every loan active
+at December $T$: balance above zero, no zero-balance event, and never yet 180
+or more days delinquent. Loans 30 to 179 days past due at $T$ are in the
+portfolio, but current delinquency is not a model input (the design has
+none), so the models treat them like current loans with the same inputs;
+\cref{sec:limits} reports how much of the book they are. Allowances are computed on the \num{const.n_port}
+portfolio loans with the smallest value of a fixed loan-level random draw,
+and expressed as a rate, expected loss over balance on that sample (a ratio
+estimator). The dollar figures multiply the rate by the balance of the whole
+active book. \Cref{sec:sampling} reports the sampling error this adds.
+
+A model at $T$ may use only what a lender knew at $T$, in the data as
+published in 2026: Freddie Mac's Release 47 and current FRED vintages, which
+may revise what was reported at the time (\cref{sec:limits}). Its training data are
+the \emph{loan-years} whose outcome year ends on or before $T$: a loan active
+at December $y \le T-1$ contributes one row, with inputs measured at December
+$y$ and the outcome observed in year $y+1$. Censored loan-years (removal for a
+defect or a reperforming sale, without a default first) are dropped. Loans,
+never rows, are split by a keyed hash of the loan identifier: 20\% are held
+out and used only to measure accuracy, 10\% are used for early stopping and
+70\% for fitting. Each loan is kept with probability
+$\min\{1, 6.25\text{M}/n_T\}$, where $n_T$ is the number of loan-years
+available, so that fitting and early-stopping rows together are capped near
+the design's five million.
+
+\subsection{Outcomes, competing risks and inputs}
+
+In each loan-year a loan defaults, prepays or survives. \emph{Default} is the
+first month 180 or more days delinquent, or a credit-event zero balance
+(third-party sale, short sale or charge-off, REO disposition, whole-loan
+sale; codes 02, 03, 09, 15), whichever comes first. \emph{Prepayment} is a
+voluntary payoff (code 01). Two binary hazard models describe the year:
+\begin{equation}
+h_d = \Pr(\text{default}\mid\text{active}),\qquad
+h_p = \Pr(\text{prepay}\mid\text{active, no default}),
+\end{equation}
+so that $\Pr(\text{default})=h_d$, $\Pr(\text{prepay})=(1-h_d)h_p$ and
+$\Pr(\text{survive})=(1-h_d)(1-h_p)$. Any three-outcome distribution factors
+this way, and the multinomial log loss is exactly the sum of the two binary log
+losses, so nothing is lost relative to a multinomial model. A single
+multiclass gradient-boosting model was rejected because LightGBM applies a
+monotone constraint in the same direction to every class's score, which would
+force prepayment to rise with leverage as default does.
+
+The \num{const.n_features} inputs are those in \cref{tab:features}: credit
+score, original LTV and combined LTV, debt-to-income ratio, original rate and
+its spread over the Freddie Mac PMMS 30-year rate in the origination month,
+loan purpose, occupancy, property type, units, first-time-buyer flag, number
+of borrowers, origination channel, mortgage-insurance percentage, original
+term, loan age, \emph{current} LTV (current balance over the origination value
+marked to the FHFA state house-price index), the state's house-price growth
+over the prior year, and its unemployment rate and twelve-month change. Seller
+and servicer names, ZIP3 and MSA are not used: they identify institutions or
+come close to identifying places.
+
+\subsection{The allowance}
+
+For each portfolio loan the projection runs one row per remaining contractual
+year $k=1,\dots,K$. The balance at the start of year $k$, $B_k$, is the
+interest-bearing balance amortised at the loan's current rate over its
+remaining term, plus any non-interest-bearing (deferred) balance, which is due
+at maturity. Loan age advances by twelve months a year, current LTV follows
+$B_k$ and the house-price path, and the origination inputs do not change.
+With $S_1=1$,
+\begin{equation}\label{eq:el}
+m_k = S_k\,h_{d,k},\qquad S_{k+1}=S_k\,(1-h_{d,k})(1-h_{p,k}),\qquad
+\mathrm{EL} = \sum_{k=1}^{K} B_k\, m_k\, \mathrm{LGD}_k ,
+\end{equation}
+where a final part-year of $q$ months uses $1-(1-h)^{q/12}$. The allowance is
+undiscounted, the probability-of-default/loss-given-default method, which ASC
+326 permits without discounting outside a discounted-cash-flow approach. The
+lifetime PD of a loan is $\sum_k m_k$.
+
+\paragraph{Macro path.} During the two-year reasonable and supportable period
+the state's house-price growth and unemployment rate stay at their December $T$
+values. Afterwards they revert to their long-run state means, computed over
+all years up to $T$, in a straight line over one year (primary). The two
+other policies of H2 are immediate reversion and straight-line reversion over
+three years; ASC 326-20-30-9 names immediate and straight-line reversion, and
+the durations are this study's choice. A loan-year beginning at year-end $p$
+reads the path's value at $p$, as in training. Because the path is annual, the
+first reverted value is at $T+3$ under both immediate and one-year
+straight-line reversion, so those two policies give the same allowance and the
+policy range of H2 is in effect the range between one- and three-year
+reversion. The length of the reasonable and supportable period, also the
+lender's choice, is held at two years throughout. A secondary
+analysis replaces the forecast with the realized path through 2025.
+
+\paragraph{Loss given default.} One severity model per date, held fixed across
+all default models: total actual loss over total balance at default (a
+balance-weighted severity), among defaults resolved by December $T$, by current-LTV band at the start of the
+default year ($<$60, 60--80, 80--90, 90--100, 100--120, $\ge$120) and by
+judicial-foreclosure state \citep{gerardi2013borrower}. A default
+later paid off voluntarily has a loss of zero. A cell with fewer than thirty
+resolutions uses its band's mean; a band with fewer than thirty uses the mean
+of all resolutions. Actual loss is Freddie Mac's own calculation
+\citep{FreddieGuide2026}.
+
+\subsection{Models}
+
+The default model is one of \num{const.n_models}, all trained on the same rows:
+\begin{itemize}[nosep]
+\item 32 LightGBM binary models \citep{ke2017lightgbm}: 15 or 63 leaves $\times$ four
+row/column subsampling settings (80/100\% $\times$ 80/100\%), with five seeds
+for each subsampled setting and one for the deterministic one (the grid of
+\citealp{Khan2026Reasons});
+\item the same 32 with monotone constraints: the default hazard may not fall as
+current LTV or the debt-to-income ratio rises, or as the credit score falls;
+\item one logistic regression on cubic splines of the numeric inputs (five
+quantile knots) with one-hot categories.
+\end{itemize}
+LightGBM uses a learning rate of 0.1, at least 100 rows per leaf and early
+stopping after 50 rounds without improvement on the early-stopping loans. The
+prepayment model is fixed at each date: the most accurate on held-out
+prepayment log loss among the eight unconstrained LightGBM settings (seed 1)
+and the spline logit (Deviation~1).
+
+\subsection{The set of equally accurate models}\label{sec:set}
+
+Accuracy is held-out log loss of the default model, a proper scoring rule that
+rewards calibration, which an allowance needs. Its sampling error is a
+loan-clustered bootstrap: \num{const.n_boot} resamples of the held-out loans
+with replacement. A model is in the set if its held-out log loss is within one
+bootstrap standard error of the best. This is a tolerance,
+not a test that the models are equal: a paired comparison on the same held-out
+loans separates many of them from the best, and \cref{sec:sensitivity}
+reports the much smaller sets such a test admits. The tolerance asks instead
+which models a lender could not reject on accuracy measured as the lender
+would usually measure it, one model at a time. Sensitivity analyses use half and two standard errors, and a set defined by
+held-out AUC instead.
+
+\subsection{Predictions}\label{sec:predictions}
+
+Six predictions were recorded with the design, each with the result that
+would refute it. They are reproduced here as written.
+
+\begin{enumerate}[label=\textbf{H\arabic*.}, leftmargin=*, itemsep=2pt]
+\item \emph{Model choice exceeds training noise.} At a majority of dates, the
+range (max $-$ min) of the allowance across the set exceeds the 95\% interval
+width of the best configuration's allowance across 20 refits on loan-level
+bootstrap resamples of its training data.
+\item \emph{Model choice rivals permitted policy discretion.} At a majority of
+dates, the allowance range across the set is at least the range across the
+three reversion policies ASC 326-20-30-9 names (immediate, straight-line over
+one year, straight-line over three years), holding the best model fixed.
+\item \emph{The spread widens into stress.} The allowance range as a share of
+the best model's allowance is larger at year-ends 2006 and 2007 than at the
+median of all other dates.
+\item \emph{Constraints narrow the spread.} Within each family's own set (same
+tolerance, relative to that family's best), the relative range is smaller for
+monotone-constrained models than for unconstrained ones at a majority of dates.
+\item \emph{The range is not forecast uncertainty.} For dates whose portfolio
+has at least eight years of realized outcomes, realized lifetime credit losses
+lie inside the range of allowances across the set at fewer than half of those
+dates.
+\item \emph{Staging flips.} Under the IFRS 9 analogue (lifetime PD at $T$ more
+than twice the lifetime PD at origination as the significant-increase test),
+the share of portfolio loans whose stage differs between at least two models
+in the set exceeds the share whose stage differs across the 20 bootstrap
+refits of H1, at a majority of dates.
+\end{enumerate}
+
+\noindent For H6 the lifetime PD at origination is computed by the same model
+from the loan's origination inputs (age zero, original balance, rate and term,
+current LTV equal to original LTV) and the macro values at the year-end before
+its first payment, held for two years and then reverted as in the primary
+path. A loan whose stage is the same under every model counts as stable. This
+is a simplified analogue of the IFRS 9 test: it compares lifetime PDs from one
+model, not the lender's own origination estimate; it compares the PD over the
+remaining life with the PD over the full term, without the adjustment for the
+shorter remaining life that IFRS 9 asks for (B5.5.11), which biases seasoned
+loans towards stage 1; its origination path reverts to long-run means
+computed at $T$; and it has no 30-days-past-due backstop.

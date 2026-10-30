@@ -1,0 +1,6 @@
+{
+ "compute_seconds_sum": 118876,
+ "parallel_jobs": 3,
+ "threads_per_job": 6,
+ "wall_hours_estimate": 11.0
+}

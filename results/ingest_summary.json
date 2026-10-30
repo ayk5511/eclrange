@@ -1,0 +1,32 @@
+{
+ "quarters": 110,
+ "orig_rows": 49483298,
+ "perf_rows": 2921816568,
+ "snap_rows": 242960685,
+ "checks": {
+  "orig_bad_id": 0,
+  "orig_dup_id": 0,
+  "orig_not_frm": 0,
+  "perf_null_period": 0,
+  "perf_bad_dlq": 0,
+  "perf_unknown_loans": 0,
+  "perf_dup_loan_period": 0,
+  "loans_multi_zb": 0,
+  "loans_without_perf": 293,
+  "orig_id_quarter_mismatch": 16
+ },
+ "dot_values": {
+  "2006Q3": {
+   "orig_rate": 1
+  }
+ },
+ "zb_codes": {
+  "01": 35148145,
+  "02": 109491,
+  "03": 132645,
+  "09": 364974,
+  "15": 39197,
+  "16": 185526,
+  "96": 129956
+ }
+}

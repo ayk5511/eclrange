@@ -1,0 +1,103 @@
+\section{Inputs}\label{app:features}
+
+\begin{table}[H]\centering\small
+\caption{Model inputs, measured at December of the snapshot year.}\label{tab:features}
+\begin{tabularx}{\linewidth}{>{\raggedright\arraybackslash}p{5.2cm}X}\toprule
+Input & Definition \\ \midrule
+Credit score & Borrower credit score at origination (missing if not disclosed) \\
+Original LTV, CLTV & Loan-to-value and combined loan-to-value at origination (\%) \\
+Debt-to-income & Back-end ratio at origination (\%; missing above 65) \\
+Original rate; spread & Note rate; note rate minus the PMMS 30-year rate in the origination month \\
+Purpose, occupancy, property type, channel, first-time buyer & Categorical, as disclosed \\
+Units; number of borrowers & As disclosed \\
+MI percentage & Mortgage-insurance coverage at origination \\
+Original term & Months \\
+Loan age & Months since the first payment date, plus one \\
+Current LTV & Current balance over (original balance / original LTV) $\times$ state HPI now / state HPI at origination \\
+HPI growth & State FHFA index, fourth quarter over fourth quarter \\
+Unemployment; change & State rate in December; change over twelve months \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Data log, deviations, corrections and added analyses}\label{app:deviations}
+
+The design was committed at 10:36 ET on 29 October 2026 (commit
+\texttt{07c8ffd}); the year archives were downloaded between 13:25 and 14:30
+ET the same day, and the first loan-level file was opened at 14:33 ET to read
+the Release 47 layout. The commit timestamp is the author's machine time; it
+is not a third-party registration.
+
+\paragraph{Deviation 1: prepayment grid.} The design chose the prepayment
+model as the best of the full 65-model grid. A timing probe at December 2008,
+before any allowance had been computed, showed that a prepayment LightGBM
+model runs to about 2,700 boosting rounds (about 100 seconds), so the full grid
+would have cost about two hours per date. The prepayment model is instead the
+best of the eight unconstrained LightGBM settings at seed 1 and the spline
+logit. The design's monotone constraints are written for default risk and
+would force prepayment to fall as the credit score rises; extra seeds only
+choose the luckiest draw of a model the design holds fixed. The grid of
+default models, which is what the study is about, is unchanged.
+
+\paragraph{Implementation details the design did not specify.} Early stopping
+uses a further 10\% of loans (so fitting uses 70\%). A final part-year hazard
+is scaled as $1-(1-h)^{q/12}$. The LGD table falls back to the band, then the
+overall, mean for cells with fewer than 30 resolutions. A default later
+repaid voluntarily is a zero-loss resolution; defaults removed by a
+reperforming sale or a defect, or with no disclosed loss, are not used in the
+severity table. The IFRS 9 origination projection is defined in
+\cref{sec:predictions}. All of these were fixed before any allowance was
+computed.
+
+\paragraph{Deviations 2 to 4.} (2) The design listed a secondary analysis in
+which severity varies with the default model; it was not run, and severity is
+held fixed throughout. (3) The design scales the scored sample's allowance by
+the inverse sampling fraction; the code uses the ratio estimator (expected
+loss over balance on the sample, times the balance of the whole active
+book), which agrees in expectation and has lower variance. (4) The design
+computes the reversion means ``on data before $t$''; the code uses every year
+up to and including $T$, whose December values are observed at $T$.
+
+\paragraph{Corrections.} Four bugs were found while checking results and
+fixed; the affected steps were rerun for every date, and every number in the
+paper comes from the corrected code. The fitted models were not affected by
+any of them. (1) The realized macro path looked up each state with the wrong
+key and fell back to the long-run means. (2) A few dozen loans a year with no
+remaining term were cast to invalid integers; they now use the original term
+less the months paid. Both were found after the first three dates'
+allowances. (3) The severity table first averaged per-loan ratios of loss to
+balance at default, which a handful of loans with near-zero balances at
+default dominate (one with \$0.19 at default and a \$27{,}168 loss); severity
+is now balance-weighted, total loss over total balance at default. This was
+found after every date's allowance existed, from an implausible level.
+(4) Found by an independent review: ``immediate'' reversion set the macro
+value at year-end $T+2$ to the long-run mean, which, because that value is
+the house-price growth over year $T+2$, shortened the two-year forecast
+period. Immediate reversion now starts at $T+3$ (\cref{sec:method}).
+
+\paragraph{Analyses added after seeing results.} Each is labelled in the text
+and none replaces a recorded test: (1) the paired-difference tolerance
+(\cref{sec:sensitivity}); (2) the like-for-like versions of H1 and H6 and
+(3) the refits on independent samples, with the accuracy and bias of both
+kinds of refit (\cref{sec:refits}); (4) the lower bound for realized losses,
+which counts defaults unresolved in June 2026 at zero; (5) the decomposition
+of the H5 miss (\cref{tab:decomp}); (6) the delinquency of the portfolio
+(\cref{sec:limits}); (7) the position of the most accurate model in the set,
+the rank correlation of accuracy with the allowance, H4 on equal-size sets,
+the refit ranges against realized losses, and the decomposition with the
+December 2019 severity table and the realized default rates
+(\texttt{code/07b\_posthoc.py}). Items (3), (5) and (6), and bug (4),
+followed an independent referee review of a complete draft, and item (7) a
+second one.
+
+\section{Severity tables}\label{app:lgd}
+
+\input{tables/lgd}
+
+\section{Results by reporting date}\label{app:bydate}
+
+\input{tables/bydate}
+
+\section{Data statement}
+
+The study uses only public data and published methods.

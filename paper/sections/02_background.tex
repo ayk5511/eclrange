@@ -1,0 +1,87 @@
+\section{Background}\label{sec:background}
+
+\subsection{What the standards fix and what they leave open}
+
+Under the current expected credit loss standard (CECL, ASC 326), a lender
+reserves at each reporting date for the credit losses it expects over the
+remaining contractual life of its loans, considering prepayments
+\citep{asc326}. The standard is explicit that the method is the lender's
+choice: ``The allowance for credit losses may be determined using various
+methods'' (ASC 326-20-30-3). Beyond a reasonable and supportable forecast
+period the estimate reverts to historical loss information, and the lender may
+revert ``immediately, on a straight-line basis, or using another rational and
+systematic basis'' (326-20-30-9). The 2023 interagency policy statement
+repeats both freedoms and adds that estimating allowances ``involves a high
+degree of management judgment and is inherently imprecise''
+\citep{ips2023acl}. IFRS 9 differs mainly in staging: lifetime losses are
+recognised only once credit risk ``has increased significantly since initial
+recognition'' (paragraph 5.5.3), and twelve-month losses otherwise
+\citep{ifrs9}.
+
+Three other bodies of rules bear on how much an estimate may move with the
+method. The SEC's Staff Accounting Bulletin 119 expects registrants to
+``maintain documentation to support the identified range and the rationale
+used for determining which estimate is the best estimate within the range of
+expected credit losses'' (Question 5; \citealp{sab119}). The bulletin presumes a range exists
+but says nothing about how wide it is or where it comes from. For auditors,
+AS 2501 asks whether the company has a reasonable basis for selecting its
+assumptions from a range of potential assumptions \citep{pcaob2501}, and when
+a recorded estimate falls outside a range of reasonable estimates, AS 2810
+treats the difference between it and ``the closest reasonable estimate'' as a
+misstatement \citep{pcaob2810}. The revised interagency model-risk
+guidance of April 2026 (SR 26-2, OCC Bulletin 2026-13), which replaced SR 11-7,
+asks for benchmarking against alternative models in validation, but it does
+not mention allowances, CECL or accounting estimates; the nearest it comes is a
+reference to errors in financial statements in its definition of model risk
+\citep{sr262, SR117}. None of these documents says how far equally defensible
+model choices can move an allowance. This paper measures it.
+
+\subsection{Related work}
+
+\paragraph{How much CECL estimates vary.} \citet{breeden2017cecl} applies
+several CECL method families (vintage, roll-rate, PD$\times$LGD and
+discounted-cash-flow approaches) to agency mortgage data and finds lifetime
+loss numbers that vary by a factor of two. Those methods are not equally
+accurate, so the spread mixes better and worse models.
+\citet{breeden2022selection} hold the method family fixed and rank
+macroeconomic sensitivity models by information criteria and show that the
+choice among well-ranked models moves lifetime PD materially.
+\citet{du2018sources} study how modelling choices add variation to allowances
+across banks beyond the variation that risk explains, \citet{canals2026cecl} studies model risk
+in CECL for consumer credit, and \citet{forrest2024unavoidable} argues that
+some model risk in expected-credit-loss models is unavoidable.
+\citet{hibbeln2026multiplicity} show predictive multiplicity in recovery-rate
+models, the loss-given-default side of the problem. The closest work on the
+timing of reserves, \citet{chae2019cecl}, \citet{covas2018cecl} and
+\citet{loudis2019cecl}, asks how CECL would have moved allowances and capital
+through the 2007--2009 cycle, not how they depend on the model.
+
+\paragraph{Predictive multiplicity.} Many models can fit the same data about
+equally well while disagreeing on individual cases: the ``Rashomon effect''
+\citep{breiman2001two}. The machine-learning literature measures how often
+equally accurate classifiers disagree \citep{marx2020predictive,
+hsu2022rashomon, watsondaniels2023prob}, shows that such disagreement comes
+from underspecification \citep{damour2022underspec}, and asks what it means for
+decisions \citep{black2022multiplicity, semenova2022existence,
+fisher2019all}. \citet{Khan2026Reasons} finds that equally accurate mortgage
+underwriting models name different adverse-action reasons for about a third
+of denied applicants. This paper moves the question from individual decisions
+to an aggregate on the balance sheet. Loan-level disagreements could cancel in
+a sum over millions of loans, or they could be systematic.
+
+\paragraph{Mortgage default.} Negative equity and adverse shocks drive
+mortgage default \citep{foote2008negative, elul2010triggers,
+campbell2015model}, and flexible models predict it better than linear ones on
+large loan panels \citep{sadhwani2021deep, fuster2022predictably}. The inputs
+and the competing-risks structure here follow that literature. Judicial
+foreclosure lengthens the time to liquidation
+\citep{pence2006foreclosing, gerardi2013borrower}.
+
+\paragraph{Contribution.} I know of no study that builds a formal set of
+equally accurate loan-level default models on public data and measures how far
+the CECL allowance moves across it, with the data, the economic forecast, the
+reversion policy and the loss-severity model held fixed. Doing so at
+\num{const.n_dates} year-ends over two decades also shows how the spread
+behaves into a crisis, compares it with the discretion the standard grants
+explicitly and with the losses that followed, and tests whether it reaches
+IFRS 9 staging.

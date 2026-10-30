@@ -1,0 +1,26 @@
+\section{Code and data availability}\label{sec:availability}
+
+The repository,
+\href{https://github.com/ayk5511/eclrange}{github.com/ayk5511/eclrange}, holds
+the code (MIT licence) and the text, tables, figures and aggregate results
+(CC BY 4.0). It contains:
+\begin{itemize}[nosep]
+\item the pipeline, \texttt{code/01\_ingest.py} to \texttt{code/09\_paper.py},
+which rebuilds every derived file from the Freddie Mac year archives and FRED
+series (the SHA-256 checksums of both are listed in \texttt{data/}), and
+\texttt{code/09\_paper.py}, which writes every number and table the paper
+prints;
+\item the recorded design, its commit date and the deviations, in the
+repository's \texttt{README.md};
+\item every per-date aggregate the paper reads (accuracy of each model, its
+allowance under each path and policy, severity tables, realized losses) and
+\texttt{paper/audit.py}, which recomputes the paper's numbers from them with
+independent code;
+\item unit tests of the allowance arithmetic (\texttt{tests/}).
+\end{itemize}
+No loan-level record or loan-level derivative is released: the Freddie Mac
+terms permit publishing research results only where they cannot be used to
+recreate the data \citep{FreddieTerms2025}. Anyone who registers with Freddie
+Mac can download the same archives and rerun the pipeline. On an 18-core
+workstation with 128 GB of memory the ingest takes about 40 minutes and the
+models and allowances about \num{const.hours} hours.

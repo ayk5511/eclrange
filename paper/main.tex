@@ -1,0 +1,77 @@
+\documentclass[12pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{xcolor}
+% float must precede hyperref, or every [H] float gets a duplicate PDF anchor.
+\usepackage{float}
+\usepackage{hyperref}
+\usepackage{cleveref}
+\usepackage{natbib}
+\usepackage{setspace}
+\usepackage{enumitem}
+
+\hypersetup{pdftitle={How Much Does the Model Move the Allowance? Equally Accurate Default Models and the CECL Reserve},
+  pdfauthor={Akram Khan},
+  pdfsubject={Dispersion of lifetime expected credit losses across equally accurate loan-level default models, measured on Freddie Mac data},
+  pdfkeywords={CECL, ASC 326, IFRS 9, allowance for credit losses, model risk, model multiplicity, Rashomon set, mortgage default, SAB 119},
+  colorlinks=true, linkcolor=blue!70!black, citecolor=green!50!black, urlcolor=blue!70!black}
+\onehalfspacing
+\emergencystretch=3em
+
+\input{numbers}
+
+\title{How Much Does the Model Move the Allowance?\\
+Equally Accurate Default Models and the CECL Reserve}
+
+\author{
+  Akram Khan\thanks{Independent Researcher. ORCID:
+  \href{https://orcid.org/0009-0002-7521-8648}{0009-0002-7521-8648}. Email:
+  \href{mailto:1819ak@gmail.com}{1819ak@gmail.com}. Code and every aggregate
+  result are released at
+  \href{https://github.com/ayk5511/eclrange}{github.com/ayk5511/eclrange}.
+  The loan data are Freddie Mac's public Single-Family Loan-Level Dataset,
+  which the repository does not redistribute.}
+}
+
+\date{October 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\input{sections/00_abstract}
+
+\medskip
+\noindent\textbf{Keywords:} CECL, ASC 326, IFRS 9, allowance for credit losses,
+model risk, model multiplicity, Rashomon set, mortgage default, SAB 119
+
+\noindent\textbf{JEL:} G21, G28, M41, C52, C55
+\end{abstract}
+
+\newpage
+\tableofcontents
+\newpage
+
+\input{sections/01_introduction}
+\input{sections/02_background}
+\input{sections/03_data}
+\input{sections/04_method}
+\input{sections/05_results}
+\input{sections/06_discussion}
+\input{sections/07_availability}
+
+\bibliographystyle{apalike}
+\bibliography{bib/references}
+
+\appendix
+\input{sections/08_appendix}
+
+\end{document}

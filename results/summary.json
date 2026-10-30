@@ -1,0 +1,82 @@
+{
+ "n_dates": 21,
+ "H1": {
+  "dates_holding": 13,
+  "holds": true,
+  "median_ratio_range_to_refit": 1.383398182590175
+ },
+ "H2": {
+  "dates_holding": 21,
+  "holds": true,
+  "median_ratio_range_to_policy": 11.68590147386481
+ },
+ "H3": {
+  "rel_2006": 0.372229875016502,
+  "rel_2007": 0.45598650369530064,
+  "median_others": 0.555185845682286,
+  "holds": false
+ },
+ "H4": {
+  "dates_holding": 12,
+  "holds": true
+ },
+ "H5": {
+  "eligible_dates": [
+   2005,
+   2006,
+   2007,
+   2008,
+   2009,
+   2010,
+   2011,
+   2012,
+   2013,
+   2014,
+   2015,
+   2016,
+   2017
+  ],
+  "inside": 1,
+  "holds": true,
+  "inside_horizon_matched": 2,
+  "inside_lower_bound": 0,
+  "above_range": 4,
+  "below_range": 8,
+  "inside_dates": [
+   2009
+  ]
+ },
+ "H6": {
+  "dates_holding": 17,
+  "holds": true
+ },
+ "post_hoc": {
+  "H1_like_for_like": {
+   "dates_set_larger": 8,
+   "median_ratio": 0.8353504496608922
+  },
+  "H6_like_for_like": {
+   "dates_set_larger": 0,
+   "median_flip_set20": 0.183955825,
+   "median_flip_refit": 0.27453
+  },
+  "paired2_rel_range_median": 0.1724872258331547,
+  "paired2_size_median": 7.0,
+  "H5_lower_bound_inside": 0,
+  "refit_quality": {
+   "median_gap_se": 0.7969773834276048,
+   "refits_gt1se": 111,
+   "dates_mean_refit_above_best": 18,
+   "median_bias": 0.10556490133728436
+  },
+  "resample": {
+   "dates_set20_larger_than_resample_range": 12,
+   "median_ratio": 1.0914849775731186,
+   "dates_set_range_gt_resample_w95": 14,
+   "median_gap_se": 0.1367817332314923,
+   "median_bias": 0.0590006016384772,
+   "dates_flip_set20_gt_resample": 4,
+   "median_flip_resample": 0.270995
+  }
+ }
+}

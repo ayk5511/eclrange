@@ -1,0 +1,20 @@
+[project]
+name = "eclrange"
+version = "0.1.0"
+description = "Range of the CECL allowance across equally accurate loan-level default models, on Freddie Mac's public loan-level data."
+readme = "README.md"
+requires-python = ">=3.12"
+license = {text = "MIT"}
+authors = [{name = "Akram Khan"}]
+dependencies = ["numpy>=2.0", "polars>=1.30", "duckdb>=1.2", "lightgbm>=4.5", "scikit-learn>=1.6",
+                "matplotlib>=3.9"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "ruff>=0.6"]
+
+[tool.pytest.ini_options]
+pythonpath = ["code"]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 120
