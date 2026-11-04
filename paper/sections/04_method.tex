@@ -113,8 +113,7 @@ The default model is one of \num{const.n_models}, all trained on the same rows:
 \begin{itemize}[nosep]
 \item 32 LightGBM binary models \citep{ke2017lightgbm}: 15 or 63 leaves $\times$ four
 row/column subsampling settings (80/100\% $\times$ 80/100\%), with five seeds
-for each subsampled setting and one for the deterministic one (the grid of
-\citealp{Khan2026Reasons});
+for each subsampled setting and one for the deterministic one;
 \item the same 32 with monotone constraints: the default hazard may not fall as
 current LTV or the debt-to-income ratio rises, or as the credit score falls;
 \item one logistic regression on cubic splines of the numeric inputs (five
